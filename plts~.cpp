@@ -34,21 +34,38 @@ typedef struct _plts_tilde {
     t_float mod_fm;
     t_float mod_morph;
     
+    bool frequency_active;
+    bool timbre_active;
+    bool morph_active;
     bool trigger_active;
+    bool level_active;
     
     t_int block_size;
     t_int block_count;
     t_int last_n;
     t_float last_tigger;
     
+    t_int last_engine;
+    t_int last_engine_perform;
+    
     plaits::Voice voice;
     plaits::Patch patch;
     plaits::Modulations modulations;
     char shared_buffer[16384];
     
+    t_inlet *x_in2;
+    t_inlet *x_in3;
+    t_inlet *x_in4;
+    t_inlet *x_in5;
+    t_inlet *x_in6;
+    t_inlet *x_in7;
+    t_inlet *x_in8;
+    t_inlet *x_in9;
+    
     t_outlet *x_out1;
     t_outlet *x_out2;
     t_outlet *x_out_model;
+    t_outlet *x_out_model_mod;
 } t_plts_tilde;
 
 // Pure data methods, needed because we are using C++
@@ -73,7 +90,12 @@ extern "C"  {
     void plts_tilde_mod_morph(t_plts_tilde *x, t_floatarg f);
     
     void plts_tilde_trigger(t_plts_tilde *x, t_floatarg f);
+    
+    void plts_tilde_frequency_active(t_plts_tilde *x, t_floatarg f);
+    void plts_tilde_timbre_active(t_plts_tilde *x, t_floatarg f);
+    void plts_tilde_morph_active(t_plts_tilde *x, t_floatarg f);
     void plts_tilde_trigger_active(t_plts_tilde *x, t_floatarg f);
+    void plts_tilde_level_active(t_plts_tilde *x, t_floatarg f);
 }
 
 static const char* modelLabels[16] = {
@@ -95,11 +117,29 @@ static const char* modelLabels[16] = {
     "Analog hi-hat",
 };
 
+t_sample avg(t_sample *array, int offset, int size) {
+    t_sample sum = 0;
+    for (int i = offset; i < size; i++) {
+        sum += array[i];
+    }
+    return sum / size;
+}
+
 t_int *plts_tilde_perform(t_int *w) {
     t_plts_tilde *x = (t_plts_tilde *) (w[1]);
-    t_sample *out = (t_sample *) (w[3]);
-    t_sample *aux = (t_sample *) (w[4]);
-    int n = (int) (w[5]);
+
+    t_sample *eng = (t_sample *) (w[3]);
+    t_sample *timbre = (t_sample *) (w[4]);
+    t_sample *freq = (t_sample *) (w[5]);
+    t_sample *morph = (t_sample *) (w[6]);
+    t_sample *harmo = (t_sample *) (w[7]);
+    t_sample *trig = (t_sample *) (w[8]);
+    t_sample *level = (t_sample *) (w[9]);
+    t_sample *note = (t_sample *) (w[10]);
+    
+    t_sample *out = (t_sample *) (w[11]);
+    t_sample *aux = (t_sample *) (w[12]);
+    int n = (int) (w[13]);
     
     // Determine block size
     if (n != x->last_n) {
@@ -121,6 +161,16 @@ t_int *plts_tilde_perform(t_int *w) {
     // Model
     x->patch.engine = x->model;
     
+    // Send current engine
+    int active_engine = x->voice.active_engine();
+    if (x->last_engine_perform > 128 && x->last_engine != active_engine) {
+        outlet_float(x->x_out_model_mod, active_engine);
+        x->last_engine = active_engine;
+        x->last_engine_perform = 0;
+    } else {
+        x->last_engine_perform++;
+    }
+    
     // Calculate pitch for lowCpu mode if needed
     float pitch = x->pitch;
     // Update patch
@@ -134,31 +184,31 @@ t_int *plts_tilde_perform(t_int *w) {
     x->patch.timbre_modulation_amount = x->mod_timbre;
     x->patch.morph_modulation_amount = x->mod_morph;
     
-    // Update modulations
-    //x->modulations.engine = inputs[ENGINE_INPUT].value / 5.f;
-    //x->modulations.note = inputs[NOTE_INPUT].value * 12.f;
-    //x->modulations.frequency = inputs[FREQ_INPUT].value * 6.f;
-    //x->modulations.harmonics = inputs[HARMONICS_INPUT].value / 5.f;
-    //x->modulations.timbre = inputs[TIMBRE_INPUT].value / 8.f;
-    //x->modulations.morph = inputs[MORPH_INPUT].value / 8.f;
-    // Triggers at around 0.7 V
-    if (x->trigger) {
-        x->modulations.trigger = 1.0f;
-        x->trigger = false;
-    } else {
-        x->modulations.trigger = 0.0f;
-    }
-    //x->modulations.level = inputs[LEVEL_INPUT].value / 8.f;
-    
-    //x->modulations.frequency_patched = inputs[FREQ_INPUT].active;
-    //x->modulations.timbre_patched = inputs[TIMBRE_INPUT].active;
-    //x->modulations.morph_patched = inputs[MORPH_INPUT].active;
+    x->modulations.frequency_patched = x->frequency_active ? 1 : 0;
+    x->modulations.timbre_patched = x->timbre_active ? 1 : 0;
+    x->modulations.morph_patched = x->morph_active ? 1 : 0;
     x->modulations.trigger_patched = x->trigger_active ? 1 : 0;
-    //x->modulations.level_patched = inputs[LEVEL_INPUT].active;
-    
+    x->modulations.level_patched = x->level_active ? 1 : 0;
     
     // Render frames
     for (int j = 0; j < x->block_count; j++) {
+        // Update modulations
+        x->modulations.engine = avg(eng, x->block_size * j, x->block_size) / 5.f;
+        x->modulations.note = avg(note, x->block_size * j, x->block_size) * 12.f;
+        x->modulations.frequency = avg(freq, x->block_size * j, x->block_size) * 6.f;
+        x->modulations.harmonics = avg(harmo, x->block_size * j, x->block_size) / 5.f;
+        x->modulations.timbre = avg(timbre, x->block_size * j, x->block_size) / 8.f;
+        x->modulations.morph = avg(morph, x->block_size * j, x->block_size) / 8.f;
+        x->modulations.level = avg(level, x->block_size * j, x->block_size) / 8.f;
+        // Message trigger
+        if (x->trigger) {
+            x->modulations.trigger = 1.0f;
+            x->trigger = false;
+        } else {
+            // Triggers at around 0.7 V
+            x->modulations.trigger = avg(trig, x->block_size * j, x->block_size) / 3.f;
+        }
+        
         plaits::Voice::Frame output[x->block_size];
         x->voice.Render(x->patch, x->modulations, output, x->block_size);
         
@@ -168,24 +218,41 @@ t_int *plts_tilde_perform(t_int *w) {
         }
     }
 
-    return (w + 6);
+    return (w + 14);
 }
 
 void plts_tilde_dsp(t_plts_tilde *x, t_signal **sp) {
     dsp_add(plts_tilde_perform,
-            5,
+            13,
             x,
             sp[0]->s_vec,
             sp[1]->s_vec,
             sp[2]->s_vec,
+            sp[3]->s_vec,
+            sp[4]->s_vec,
+            sp[5]->s_vec,
+            sp[6]->s_vec,
+            sp[7]->s_vec,
+            sp[8]->s_vec,
+            sp[9]->s_vec,
+            sp[10]->s_vec,
             sp[0]->s_n);
 }
 
 void plts_tilde_free(t_plts_tilde *x) {
     x->voice.FreeEngines();
+    inlet_free(x->x_in2);
+    inlet_free(x->x_in3);
+    inlet_free(x->x_in4);
+    inlet_free(x->x_in5);
+    inlet_free(x->x_in6);
+    inlet_free(x->x_in7);
+    inlet_free(x->x_in8);
+    inlet_free(x->x_in9);
     outlet_free(x->x_out1);
     outlet_free(x->x_out2);
     outlet_free(x->x_out_model);
+    outlet_free(x->x_out_model_mod);
 }
 
 void *plts_tilde_new(t_floatarg f) {
@@ -211,11 +278,28 @@ void *plts_tilde_new(t_floatarg f) {
     x->mod_fm = 0;
     x->mod_morph = 0;
     
+    x->frequency_active = false;
+    x->timbre_active = false;
+    x->morph_active = false;
     x->trigger_active = false;
+    x->level_active = false;
+    
+    x->last_engine = 0;
+    x->last_engine_perform = 0;
+    
+    x->x_in2 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in3 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in4 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in5 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in6 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in7 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in8 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
+    x->x_in9 = inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("signal"), gensym ("signal"));
     
     x->x_out1 = outlet_new(&x->x_obj, &s_signal);
     x->x_out2 = outlet_new(&x->x_obj, &s_signal);
     x->x_out_model = outlet_new(&x->x_obj, &s_symbol);
+    x->x_out_model_mod = outlet_new(&x->x_obj, &s_symbol);
     
     return (void *)x;
 }
@@ -265,8 +349,24 @@ void plts_tilde_mod_morph(t_plts_tilde *x, t_floatarg f) {
     x->mod_morph = f;
 }
 
+void plts_tilde_frequency_active(t_plts_tilde *x, t_floatarg f) {
+    x->frequency_active = f >= 1;
+}
+
+void plts_tilde_timbre_active(t_plts_tilde *x, t_floatarg f) {
+    x->timbre_active = f >= 1;
+}
+
+void plts_tilde_morph_active(t_plts_tilde *x, t_floatarg f) {
+    x->morph_active = f >= 1;
+}
+
 void plts_tilde_trigger_active(t_plts_tilde *x, t_floatarg f) {
     x->trigger_active = f >= 1;
+}
+
+void plts_tilde_level_active(t_plts_tilde *x, t_floatarg f) {
+    x->level_active = f >= 1;
 }
 
 void plts_tilde_setup(void) {
@@ -342,8 +442,28 @@ void plts_tilde_setup(void) {
                     A_NULL);
     
     class_addmethod(plts_tilde_class,
+                    (t_method)plts_tilde_frequency_active,
+                    gensym("frequency_active"),
+                    A_DEFFLOAT,
+                    A_NULL);
+    class_addmethod(plts_tilde_class,
+                    (t_method)plts_tilde_timbre_active,
+                    gensym("timbre_active"),
+                    A_DEFFLOAT,
+                    A_NULL);
+    class_addmethod(plts_tilde_class,
+                    (t_method)plts_tilde_morph_active,
+                    gensym("morph_active"),
+                    A_DEFFLOAT,
+                    A_NULL);
+    class_addmethod(plts_tilde_class,
                     (t_method)plts_tilde_trigger_active,
                     gensym("trigger_active"),
+                    A_DEFFLOAT,
+                    A_NULL);
+    class_addmethod(plts_tilde_class,
+                    (t_method)plts_tilde_level_active,
+                    gensym("level_active"),
                     A_DEFFLOAT,
                     A_NULL);
 }
