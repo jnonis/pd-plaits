@@ -2,7 +2,7 @@
 #X obj 324 29 plts~-abs;
 #X obj 450 467 dac~;
 #X obj 726 283 vsl 15 128 0 1 0 1 empty empty aux 0 -9 0 10 -262144
--1 -1 6200 1;
+-1 -1 0 1;
 #X obj 450 381 *~;
 #N canvas 0 22 450 278 (subpatch) 0;
 #X array aux-scope 256 float 1;
@@ -59,7 +59,7 @@
 ;
 #X obj 297 113 f;
 #X obj 135 85 hradio 15 1 0 8 empty empty step 0 -8 0 10 -262144 -1
--1 0;
+-1 7;
 #X obj 297 134 mod 8;
 #X obj 50 297 f;
 #X obj 20 297 f;
@@ -71,25 +71,25 @@
 #X obj 225 297 f;
 #X obj 297 174 select 0 1 2 3 4 5 6 7;
 #X obj 35 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 5600 1;
+-1 -1 6200 1;
 #X obj 65 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 6000 1;
+-1 -1 0 1;
 #X obj 95 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 5100 1;
+-1 -1 6100 1;
 #X obj 125 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 5600 1;
+-1 -1 0 1;
 #X obj 151 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 6900 1;
+-1 -1 6000 1;
 #X obj 181 115 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
 -1 -1 0 1;
 #X obj 211 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 0 1;
+-1 -1 6100 1;
 #X obj 241 114 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
 -1 -1 0 1;
 #X obj 109 344 f;
 #X obj 298 7 loadbang;
 #X obj 94 86 nbx 3 14 40 350 0 1 empty empty tempo 0 -9 0 10 -262144
--1 -1 69 256;
+-1 -1 47 256;
 #X obj 297 85 metro;
 #X obj 109 369 outlet;
 #X obj 324 42 expr 60000 / $f1;
@@ -185,7 +185,7 @@
 #X coords 0 -1 1 1 250 200 2 20 70;
 #X restore 20 26 pd sequencer;
 #X obj 726 126 vsl 15 128 0 1 0 1 empty empty out 0 -9 0 10 -262144
--1 -1 6300 1;
+-1 -1 3500 1;
 #X obj 479 381 *~;
 #X obj 450 412 +~;
 #N canvas 0 22 450 278 (subpatch) 0;
@@ -238,7 +238,7 @@
 #X obj 567 444 tabwrite~ out-scope;
 #X obj 567 466 tabwrite~ aux-scope;
 #X obj 46 250 vsl 15 128 0 127 0 0 empty empty empty 0 -9 0 10 -262144
--1 -1 1400 1;
+-1 -1 0 1;
 #X obj 46 436 snapshot~;
 #X floatatom 123 475 5 0 0 0 - - -, f 5;
 #X obj 46 415 osc~;
@@ -282,6 +282,21 @@
 #X restore 185 341 graph;
 #X obj 91 504 tabwrite~ array1;
 #X obj 109 403 metro 50;
+#N canvas 765 142 450 300 mtocv 0;
+#X obj 153 24 inlet;
+#X obj 153 45 -63;
+#X obj 153 66 / 64;
+#X obj 153 108 sig~;
+#X obj 153 155 outlet~;
+#X obj 153 87 * 4;
+#X obj 211 154 outlet;
+#X connect 0 0 1 0;
+#X connect 1 0 2 0;
+#X connect 2 0 5 0;
+#X connect 3 0 4 0;
+#X connect 5 0 3 0;
+#X connect 5 0 6 0;
+#X restore 701 72 pd mtocv;
 #X connect 0 0 3 0;
 #X connect 0 0 12 0;
 #X connect 0 1 9 0;
@@ -291,15 +306,14 @@
 #X connect 5 0 6 0;
 #X connect 6 0 12 0;
 #X connect 6 0 13 0;
-#X connect 7 0 0 7;
-#X connect 7 1 0 5;
+#X connect 7 0 25 0;
+#X connect 7 1 0 6;
 #X connect 8 0 3 1;
 #X connect 9 0 10 1;
 #X connect 10 0 1 0;
 #X connect 10 0 1 1;
 #X connect 14 0 21 0;
 #X connect 15 0 19 0;
-#X connect 16 0 0 1;
 #X connect 17 0 15 0;
 #X connect 17 0 23 0;
 #X connect 18 0 24 0;
@@ -308,3 +322,4 @@
 #X connect 21 0 17 0;
 #X connect 24 0 15 0;
 #X connect 24 0 23 0;
+#X connect 25 1 0 8;
