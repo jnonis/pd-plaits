@@ -117,14 +117,6 @@ static const char* modelLabels[16] = {
     "Analog hi-hat",
 };
 
-t_sample avg(t_sample *array, int offset, int size) {
-    t_sample sum = 0;
-    for (int i = offset; i < size; i++) {
-        sum += array[i];
-    }
-    return sum / (t_sample) size;
-}
-
 t_int *plts_tilde_perform(t_int *w) {
     t_plts_tilde *x = (t_plts_tilde *) (w[1]);
 
@@ -174,7 +166,6 @@ t_int *plts_tilde_perform(t_int *w) {
     // Calculate pitch for lowCpu mode if needed
     float pitch = x->pitch;
     pitch += log2f(48000.f * (1.f / sys_getsr()));
-    pitch += avg(note, 0, n);
     // Update patch
     x->patch.note = 60.f + pitch * 12.f;
     x->patch.harmonics = x->harmonics;
@@ -195,21 +186,20 @@ t_int *plts_tilde_perform(t_int *w) {
     // Render frames
     for (int j = 0; j < x->block_count; j++) {
         // Update modulations
-        x->modulations.engine = avg(eng, x->block_size * j, x->block_size) / 5.f;
-        // VOct does not work, it does not track notes properlly.
-        //x->modulations.note = avg(note, x->block_size * j, x->block_size) * 12.f;
-        x->modulations.frequency = avg(freq, x->block_size * j, x->block_size) * 6.f;
-        x->modulations.harmonics = avg(harmo, x->block_size * j, x->block_size) / 5.f;
-        x->modulations.timbre = avg(timbre, x->block_size * j, x->block_size) / 8.f;
-        x->modulations.morph = avg(morph, x->block_size * j, x->block_size) / 8.f;
-        x->modulations.level = avg(level, x->block_size * j, x->block_size) / 8.f;
+        x->modulations.engine = eng[x->block_size * j] / 5.f;
+        x->modulations.note = note[x->block_size * j] * 12.f;
+        x->modulations.frequency = freq[x->block_size * j] * 6.f;
+        x->modulations.harmonics = harmo[x->block_size * j] / 5.f;
+        x->modulations.timbre = timbre[x->block_size * j] / 8.f;
+        x->modulations.morph = morph[x->block_size * j] / 8.f;
+        x->modulations.level = level[x->block_size * j] / 8.f;
         // Message trigger
         if (x->trigger) {
             x->modulations.trigger = 1.0f;
             x->trigger = false;
         } else {
             // Triggers at around 0.7 V
-            x->modulations.trigger = avg(trig, x->block_size * j, x->block_size) / 3.f;
+            x->modulations.trigger = trig[x->block_size * j] / 3.f;
         }
         
         plaits::Voice::Frame output[x->block_size];
