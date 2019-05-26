@@ -1,6 +1,6 @@
 #N canvas 147 35 1103 630 10;
-#X obj 259 160 vsl 15 128 -5 5 0 1 /plts~/freq /plts~/freq freq 0 -9
-0 10 -262144 -1 -1 6300 1;
+#X obj 259 160 vsl 15 128 -4 4 0 1 /plts~/freq /plts~/freq freq 0 -9
+0 10 -262144 -1 -1 7200 1;
 #X msg 257 401 pitch \$1;
 #X obj 300 160 vsl 15 128 0 1 0 1 /plts~/harmonics /plts~/harmonics
 har 0 -9 0 10 -262144 -1 -1 0 1;
@@ -11,17 +11,17 @@ har 0 -9 0 10 -262144 -1 -1 0 1;
 -9 0 10 -262144 -1 -1 0 1;
 #X msg 323 453 timbre \$1;
 #X obj 345 160 vsl 15 128 0 1 0 1 /plts~/morph /plts~/morph mor 0 -9
-0 10 -262144 -1 -1 6100 1;
+0 10 -262144 -1 -1 9000 1;
 #X msg 347 475 morph \$1;
 #X obj 227 160 vsl 15 128 0 15 0 1 /plts~/model /plts~/model model
-0 -9 0 10 -262144 -1 -1 3700 1;
+0 -9 0 10 -262144 -1 -1 0 1;
 #X msg 227 372 model \$1;
 #X obj 440 102 bng 35 250 50 0 /plts~/trigger /plts~/trigger trigger
 0 -8 0 10 -262144 -1 -1;
 #X obj 368 160 vsl 15 128 0 1 0 1 /plts~/lpg /plts~/lpg lpg 0 -9 0
 10 -262144 -1 -1 6300 1;
 #X obj 391 160 vsl 15 128 0 1 0 1 /plts~/decay /plts~/decay dec 0 -9
-0 10 -262144 -1 -1 6350 1;
+0 10 -262144 -1 -1 6300 1;
 #X msg 367 496 lpg_colour \$1;
 #X msg 391 517 decay \$1;
 #X msg 582 209 trigger \$1;
@@ -53,7 +53,7 @@ empty 0 -8 0 10 -262144 -1 -1 1 1;
 #X obj 478 69 tgl 15 1 /plts~/level/active /plts~/level/active empty
 0 -8 0 10 -262144 -1 -1 0 1;
 #X obj 277 69 tgl 15 1 /plts~/timbre/active /plts~/timbre/active empty
-0 -8 0 10 -262144 -1 -1 1 1;
+0 -8 0 10 -262144 -1 -1 0 1;
 #X obj 357 69 tgl 15 1 /plts~/morph/active /plts~/morph/active empty
 0 -8 0 10 -262144 -1 -1 0 1;
 #X obj 317 69 tgl 15 1 /plts~/freq/active /plts~/freq/active empty
@@ -92,6 +92,7 @@ empty 0 -8 0 10 -262144 -1 -1 1 1;
 #X obj 9 319 osc-send /plts~/mod/timbre;
 #X obj 9 339 osc-send /plts~/mod/fm;
 #X obj 875 520 osc-send /plts~/model/mod;
+#X msg 33 411 0;
 #X connect 0 0 1 0;
 #X connect 1 0 4 0;
 #X connect 2 0 5 0;
@@ -140,4 +141,8 @@ empty 0 -8 0 10 -262144 -1 -1 1 1;
 #X connect 55 0 4 0;
 #X connect 56 0 4 0;
 #X connect 57 0 4 0;
+#X connect 77 0 1 0;
+#X connect 77 0 26 0;
+#X connect 77 0 22 0;
+#X connect 77 0 23 0;
 #X coords 0 -1 1 1 330 260 2 200 50;

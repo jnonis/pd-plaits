@@ -122,7 +122,7 @@ t_sample avg(t_sample *array, int offset, int size) {
     for (int i = offset; i < size; i++) {
         sum += array[i];
     }
-    return sum / size;
+    return sum / (t_sample) size;
 }
 
 t_int *plts_tilde_perform(t_int *w) {
@@ -173,6 +173,8 @@ t_int *plts_tilde_perform(t_int *w) {
     
     // Calculate pitch for lowCpu mode if needed
     float pitch = x->pitch;
+    pitch += log2f(48000.f * (1.f / sys_getsr()));
+    pitch += avg(note, 0, n);
     // Update patch
     x->patch.note = 60.f + pitch * 12.f;
     x->patch.harmonics = x->harmonics;
@@ -194,7 +196,8 @@ t_int *plts_tilde_perform(t_int *w) {
     for (int j = 0; j < x->block_count; j++) {
         // Update modulations
         x->modulations.engine = avg(eng, x->block_size * j, x->block_size) / 5.f;
-        x->modulations.note = avg(note, x->block_size * j, x->block_size) * 12.f;
+        // VOct does not work, it does not track notes properlly.
+        //x->modulations.note = avg(note, x->block_size * j, x->block_size) * 12.f;
         x->modulations.frequency = avg(freq, x->block_size * j, x->block_size) * 6.f;
         x->modulations.harmonics = avg(harmo, x->block_size * j, x->block_size) / 5.f;
         x->modulations.timbre = avg(timbre, x->block_size * j, x->block_size) / 8.f;
@@ -264,7 +267,7 @@ void *plts_tilde_new(t_floatarg f) {
     x->patch.engine = 0;
     x->patch.lpg_colour = 0.5f;
     x->patch.decay = 0.5f;
-    
+
     x->model = 0;
     x->pitch = 0;
     x->harmonics = 0;
