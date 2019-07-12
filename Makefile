@@ -43,7 +43,7 @@ class.sources = plts~.cpp
 # all extra files to be included in binary distribution of the library
 datafiles = plts~-help.pd README.md
 
-cflags = -DTEST -Wno-unused-local-typedefs -I./
+cflags = -DTEST -Wno-unused-local-typedefs -I.
 
 # include Makefile.pdlibbuilder from submodule directory 'pd-lib-builder'
 include Makefile.pdlibbuilder
